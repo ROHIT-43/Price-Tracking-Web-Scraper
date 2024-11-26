@@ -4,6 +4,7 @@ import axios from "axios";
 const TrackedProductList = () => {
   const [trackedProducts, setTrackedProducts] = useState([]);
   const [newTrackedProduct, setNewTrackedProduct] = useState("");
+  const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     fetchTrackedProducts();
@@ -11,9 +12,7 @@ const TrackedProductList = () => {
 
   const fetchTrackedProducts = async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:5000/tracked-products"
-      );
+      const response = await axios.get(`${apiUrl}/tracked-products`);
 
       setTrackedProducts(response.data);
     } catch (error) {
@@ -28,7 +27,7 @@ const TrackedProductList = () => {
   const handleAddTrackedProduct = async () => {
     try {
       const response = await axios.post(
-        "http://localhost:5000/add-tracked-product",
+        "https://price-tracking-web-scraper-oy3l.vercel.app/add-tracked-product",
         {
           name: newTrackedProduct,
         }
@@ -46,7 +45,7 @@ const TrackedProductList = () => {
 
   const handleToggleTrackedProduct = async (productId) => {
     try {
-      await axios.put(`http://localhost:5000/tracked-product/${productId}`);
+      await axios.put(`https://price-tracking-web-scraper-oy3l.vercel.app/tracked-product/${productId}`);
       setTrackedProducts((prevProducts) =>
         prevProducts.map((product) =>
           product.id === productId
