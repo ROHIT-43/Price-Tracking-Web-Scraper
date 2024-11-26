@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_cors import CORS
-from .scripts.generate_auth import generate_auth_file
+from scripts.generate_auth import generate_auth_file
 
 auth_file_path = generate_auth_file()
 app = Flask(__name__)
