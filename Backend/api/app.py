@@ -8,7 +8,7 @@ from scripts.generate_auth import generate_auth_file
 auth_file_path = generate_auth_file()
 app = Flask(__name__)
 CORS(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:////tmp/database.db'
 
 db = SQLAlchemy(app)
 
