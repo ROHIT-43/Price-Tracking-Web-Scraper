@@ -25,26 +25,31 @@
 
 # print(auth_data)
 
-import os
-import json
-import tempfile
-from dotenv import load_dotenv
+# scripts/generate_auth.py
 
-# Load environment variables from .env file (if you have one)
-load_dotenv()
+def generate_auth_file():
+    # Your logic to create auth.json
+    import os
+    import json
+    import tempfile
+    from dotenv import load_dotenv
 
-# Collect the environment variables
-auth_data = {
-    "host": os.getenv("BRIGHT_DATA_HOST"),
-    "username": os.getenv("BRIGHT_DATA_USERNAME"),
-    "password": os.getenv("BRIGHT_DATA_PASSWORD"),
-}
+    # Load environment variables from .env file (if you have one)
+    load_dotenv()
 
-# Write to /tmp directory for Vercel to access
-output_file = '/tmp/auth.json'
+    # Collect the environment variables
+    auth_data = {
+        "host": os.getenv("BRIGHT_DATA_HOST"),
+        "username": os.getenv("BRIGHT_DATA_USERNAME"),
+        "password": os.getenv("BRIGHT_DATA_PASSWORD"),
+    }
 
-# Write the JSON data to the temporary file
-with open(output_file, "w") as f:
-    json.dump(auth_data, f, indent=4)
+    # Write to /tmp directory for Vercel to access
+    output_file = '/tmp/auth.json'
 
-print(f"auth.json file created at {output_file}")
+    # Write the JSON data to the temporary file
+    with open(output_file, "w") as f:
+        json.dump(auth_data, f, indent=4)
+
+    print(f"auth.json file created at {output_file}")
+    return output_file  # Return the file path
