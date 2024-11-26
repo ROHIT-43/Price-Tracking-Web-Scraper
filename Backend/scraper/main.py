@@ -4,6 +4,9 @@ import json
 import os
 from amazon import get_product as get_amazon_product
 from requests import post
+from playwright._impl._errors import Error
+import asyncio
+from urllib.parse import urlparse
 
 AMAZON = "https://amazon.ca"
 
@@ -54,21 +57,19 @@ async def get_products(page, search_text, selector, get_product):
     valid_products = []
     words = search_text.split(" ")
 
-    async with asyncio.TaskGroup() as tg:
-        for div in product_divs:
-            async def task(p_div):
-                product = await get_product(p_div)
+    async def process_product(div):
+        product = await get_product(div)
+        if not product["price"] or not product["url"]:
+            return
+        for word in words:
+            if not product["name"] or word.lower() not in product["name"].lower():
+                break
+        else:
+            valid_products.append(product)
 
-                if not product["price"] or not product["url"]:
-                    return
+    tasks = [process_product(div) for div in product_divs]
 
-                for word in words:
-                    if not product["name"] or word.lower() not in product["name"].lower():
-                        break
-                else:
-                    valid_products.append(product)
-            tg.create_task(task(div))
-
+    await asyncio.gather(*tasks)
     return valid_products
 
 
@@ -102,12 +103,28 @@ async def main(url, search_text, response_route):
         browser = await pw.chromium.connect_over_cdp(browser_url)
         page = await browser.new_page()
         print("Connected.")
-        await page.goto(url, timeout=120000)
+        retries = 3  # Define the number of retries
+        for attempt in range(retries):
+            try:
+                if "www." not in url:
+                    url = url.replace("amazon.ca", "www.amazon.ca")
+                await page.goto(url, timeout=60000)
+                await page.wait_for_selector(metadata.get("search_field_query"), timeout=60000)
+                break
+            except Error as e:
+                # If navigation fails, retry (up to 3 attempts)
+                if attempt < retries - 1:
+                    print(f"Retrying navigation (attempt {attempt + 1})...")
+                    await asyncio.sleep(2)
+                    continue
+                else:
+                    print(f"Navigation error: {e}")
+                    raise e  # Raise the error if all retries fail
         print("Loaded initial page.")
         search_page = await search(metadata, page, search_text)
 
         def func(x): return None
-        if url == AMAZON:
+        if urlparse(url).netloc.replace("www.", "") == urlparse(AMAZON).netloc:
             func = get_amazon_product
         else:
             raise Exception('Invalid URL')
