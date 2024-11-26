@@ -33,21 +33,23 @@ from dotenv import load_dotenv
 # Load environment variables from .env file (if you have one)
 load_dotenv()
 
-# Collect the environment variables
-auth_data = {
-    "host": os.getenv("BRIGHT_DATA_HOST"),
-    "username": os.getenv("BRIGHT_DATA_USERNAME"),
-    "password": os.getenv("BRIGHT_DATA_PASSWORD"),
-}
+def generate_auth_file():
+    # Collect the environment variables
+    auth_data = {
+        "host": os.getenv("BRIGHT_DATA_HOST"),
+        "username": os.getenv("BRIGHT_DATA_USERNAME"),
+        "password": os.getenv("BRIGHT_DATA_PASSWORD"),
+    }
 
-# Create a temporary directory
-temp_dir = tempfile.gettempdir()
+    # Create a temporary directory
+    temp_dir = tempfile.gettempdir()
 
-# Define the path for your temporary auth.json file
-output_file = os.path.join(temp_dir, "auth.json")
+    # Define the path for your temporary auth.json file
+    output_file = os.path.join(temp_dir, "auth.json")
 
-# Write the JSON data to the temporary file
-with open(output_file, "w") as f:
-    json.dump(auth_data, f, indent=4)
+    # Write the JSON data to the temporary file
+    with open(output_file, "w") as f:
+        json.dump(auth_data, f, indent=4)
 
-print(f"auth.json file created at {output_file}")
+    print(f"auth.json file created at {output_file}")
+    return output_file
