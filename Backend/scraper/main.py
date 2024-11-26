@@ -7,8 +7,12 @@ from requests import post
 from playwright._impl._errors import Error
 import asyncio
 from urllib.parse import urlparse
+from dotenv import load_dotenv
+
+load_dotenv()
 
 AMAZON = "https://amazon.ca"
+URL = os.getenv("REACT_APP_API_URL", "http://localhost:5000");
 
 URLS = {
     AMAZON: {
@@ -87,7 +91,7 @@ def post_results(results, endpoint, search_text, source):
     data = {"data": results, "search_text": search_text, "source": source}
 
     print("Sending request to", endpoint)
-    response = post("http://localhost:5000" + endpoint,
+    response = post(URL + endpoint,
                     headers=headers, json=data)
     print("Status code:", response.status_code)
 
