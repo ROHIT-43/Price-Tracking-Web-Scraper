@@ -67,10 +67,14 @@ def submit_results():
 
 @app.route('/unique_search_texts', methods=['GET'])
 def get_unique_search_texts():
-    unique_search_texts = db.session.query(
-        ProductResult.search_text).distinct().all()
-    unique_search_texts = [text[0] for text in unique_search_texts]
-    return jsonify(unique_search_texts)
+    try:
+        unique_search_texts = db.session.query(
+            ProductResult.search_text).distinct().all()
+        unique_search_texts = [text[0] for text in unique_search_texts]
+        return jsonify(unique_search_texts)
+    except Exception as e:
+        app.logger.error(f"Error: {str(e)}")  # Log the error for debugging
+        return jsonify({"error": "Internal Server Error"}), 500
 
 
 @app.route('/results')
