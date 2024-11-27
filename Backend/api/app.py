@@ -46,6 +46,19 @@ class TrackedProducts(db.Model):
 with app.app_context():
     db.create_all()
 
+    if not ProductResult.query.first():
+        dummy_product = ProductResult(
+            name="Dummy Product",
+            img="https://via.placeholder.com/150",
+            url="https://example.com/dummy-product",
+            price=99.99,
+            search_text="test",
+            source="Dummy Source"
+        )
+        db.session.add(dummy_product)
+        db.session.commit()
+        print("Dummy product inserted into the database.")
+
 @app.route('/results', methods=['POST'])
 def submit_results():
     results = request.json.get('data')
