@@ -42,6 +42,10 @@ class TrackedProducts(db.Model):
         self.name = name
         self.tracked = tracked
 
+# Initialize the database before the first request
+@app.before_first_request
+def initialize_database():
+    db.create_all()
 
 @app.route('/results', methods=['POST'])
 def submit_results():
@@ -199,7 +203,7 @@ def update_tracked_products():
     return jsonify(response), 200
 
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run()
+# if __name__ == '__main__':
+#     with app.app_context():
+#         db.create_all()
+#     app.run()
