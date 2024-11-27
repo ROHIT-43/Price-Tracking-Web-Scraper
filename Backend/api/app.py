@@ -42,9 +42,8 @@ class TrackedProducts(db.Model):
         self.name = name
         self.tracked = tracked
 
-# Initialize the database before the first request
-@app.before_first_request
-def initialize_database():
+# Initialize the database
+with app.app_context():
     db.create_all()
 
 @app.route('/results', methods=['POST'])
