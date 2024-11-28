@@ -3,12 +3,10 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_cors import CORS
-from scripts.generate_auth import generate_auth_file
 
-auth_file_path = generate_auth_file()
 app = Flask(__name__)
 CORS(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:////tmp/database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///database.db'
 
 db = SQLAlchemy(app)
 
@@ -42,22 +40,6 @@ class TrackedProducts(db.Model):
         self.name = name
         self.tracked = tracked
 
-# Initialize the database
-with app.app_context():
-    db.create_all()
-
-    if not ProductResult.query.first():
-        dummy_product = ProductResult(
-            name="Dummy Product",
-            img="https://via.placeholder.com/150",
-            url="https://example.com/dummy-product",
-            price=99.99,
-            search_text="test",
-            source="Dummy Source"
-        )
-        db.session.add(dummy_product)
-        db.session.commit()
-        print("Dummy product inserted into the database.")
 
 @app.route('/results', methods=['POST'])
 def submit_results():
@@ -83,14 +65,10 @@ def submit_results():
 
 @app.route('/unique_search_texts', methods=['GET'])
 def get_unique_search_texts():
-    try:
-        unique_search_texts = db.session.query(
-            ProductResult.search_text).distinct().all()
-        unique_search_texts = [text[0] for text in unique_search_texts]
-        return jsonify(unique_search_texts)
-    except Exception as e:
-        app.logger.error(f"Error: {str(e)}")  # Log the error for debugging
-        return jsonify({"error": "Internal Server Error"}), 500
+    unique_search_texts = db.session.query(
+        ProductResult.search_text).distinct().all()
+    unique_search_texts = [text[0] for text in unique_search_texts]
+    return jsonify(unique_search_texts)
 
 
 @app.route('/results')
@@ -215,7 +193,7 @@ def update_tracked_products():
     return jsonify(response), 200
 
 
-# if __name__ == '__main__':
-#     with app.app_context():
-#         db.create_all()
-#     app.run()
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run()

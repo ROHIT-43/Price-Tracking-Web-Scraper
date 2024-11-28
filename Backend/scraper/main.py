@@ -4,15 +4,8 @@ import json
 import os
 from amazon import get_product as get_amazon_product
 from requests import post
-from playwright._impl._errors import Error
-import asyncio
-from urllib.parse import urlparse
-from dotenv import load_dotenv
-
-load_dotenv()
 
 AMAZON = "https://amazon.ca"
-URL = os.getenv("REACT_APP_API_URL", "http://localhost:5000");
 
 URLS = {
     AMAZON: {
@@ -26,7 +19,7 @@ available_urls = URLS.keys()
 
 
 def load_auth():
-    FILE = os.path.join("temp", "auth.json")
+    FILE = os.path.join("Scraper", "auth.json")
     with open(FILE, "r") as f:
         return json.load(f)
 
@@ -61,19 +54,21 @@ async def get_products(page, search_text, selector, get_product):
     valid_products = []
     words = search_text.split(" ")
 
-    async def process_product(div):
-        product = await get_product(div)
-        if not product["price"] or not product["url"]:
-            return
-        for word in words:
-            if not product["name"] or word.lower() not in product["name"].lower():
-                break
-        else:
-            valid_products.append(product)
+    async with asyncio.TaskGroup() as tg:
+        for div in product_divs:
+            async def task(p_div):
+                product = await get_product(p_div)
 
-    tasks = [process_product(div) for div in product_divs]
+                if not product["price"] or not product["url"]:
+                    return
 
-    await asyncio.gather(*tasks)
+                for word in words:
+                    if not product["name"] or word.lower() not in product["name"].lower():
+                        break
+                else:
+                    valid_products.append(product)
+            tg.create_task(task(div))
+
     return valid_products
 
 
@@ -91,7 +86,7 @@ def post_results(results, endpoint, search_text, source):
     data = {"data": results, "search_text": search_text, "source": source}
 
     print("Sending request to", endpoint)
-    response = post(URL + endpoint,
+    response = post("http://localhost:5000" + endpoint,
                     headers=headers, json=data)
     print("Status code:", response.status_code)
 
@@ -107,28 +102,12 @@ async def main(url, search_text, response_route):
         browser = await pw.chromium.connect_over_cdp(browser_url)
         page = await browser.new_page()
         print("Connected.")
-        retries = 3  # Define the number of retries
-        for attempt in range(retries):
-            try:
-                if "www." not in url:
-                    url = url.replace("amazon.ca", "www.amazon.ca")
-                await page.goto(url, timeout=60000)
-                await page.wait_for_selector(metadata.get("search_field_query"), timeout=60000)
-                break
-            except Error as e:
-                # If navigation fails, retry (up to 3 attempts)
-                if attempt < retries - 1:
-                    print(f"Retrying navigation (attempt {attempt + 1})...")
-                    await asyncio.sleep(2)
-                    continue
-                else:
-                    print(f"Navigation error: {e}")
-                    raise e  # Raise the error if all retries fail
+        await page.goto(url, timeout=120000)
         print("Loaded initial page.")
         search_page = await search(metadata, page, search_text)
 
         def func(x): return None
-        if urlparse(url).netloc.replace("www.", "") == urlparse(AMAZON).netloc:
+        if url == AMAZON:
             func = get_amazon_product
         else:
             raise Exception('Invalid URL')
