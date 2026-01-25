@@ -11,18 +11,42 @@ This project uses:
 - Playwright
 - Bright Data (Web Scraping Browser)
 
+## Prerequisites
+
+Before setting up the project, ensure you have the following installed:
+
+- **Python 3.x** - Required for the Flask backend
+- **Node.js and npm** - Required for the React frontend
+  - Download from [nodejs.org](https://nodejs.org/)
+  - This will install both Node.js and npm together
+  - After installation, restart your terminal/PowerShell
+
 ## Using the Scraper
 
 Install all dependencies, create the `auth.json` file, start the flask backend, run the react frontend and interact with the tool.
 
 ### auth.json
 
-Fill in your [Bright Data Scraping Browser](https://brightdata.com/products/scraping-browser) credentials in a `backend/scraper/auth.json` file (see `auth_example.json`).
+Fill in your [Bright Data Scraping Browser](https://brightdata.com/products/scraping-browser) credentials in a `Backend/scraper/auth.json` file (see `auth_example.json`).
+
+**How to get your Bright Data credentials:**
+1. Sign up or log in to [Bright Data](https://brightdata.com/)
+2. Navigate to your dashboard and select the **Scraping Browser** product
+3. Go to your zone settings/credentials section
+4. Copy the following values:
+   - **host**: Usually `brd.superproxy.io:9222` (check your dashboard)
+   - **username**: Format like `brd-customer-{customer_id}-zone-{zone_name}`
+   - **password**: Your zone's password/authentication token
+5. Paste them into `Backend/scraper/auth.json` replacing the example values
 
 ### Python Flask Backend
 
-- `cd backend`
-- `pip install -r requirements.txt`
+- `cd Backend`
+- Activate the virtual environment:
+  - **Windows PowerShell:** `.\venv\Scripts\Activate.ps1`
+  - **Windows Command Prompt:** `venv\Scripts\activate.bat`
+  - **Linux/Mac:** `source venv/bin/activate`
+- If packages aren't installed: `pip install -r requirements.txt`
 - `playwright install`
 - `python app.py` or `python3 app.py`
 

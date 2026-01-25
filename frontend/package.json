@@ -21,7 +21,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "dotenv -e ../.env react-scripts start",
+    "start": "cross-env DISABLE_ESLINT_PLUGIN=true dotenv -e ../.env react-scripts start",
     "build": "dotenv -e ../.env react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -43,9 +43,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
-  ,
+  },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "dotenv-cli": "^7.4.4"
   }
 }

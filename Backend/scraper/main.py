@@ -33,41 +33,94 @@ async def search(metadata, page, search_text):
     print(f"Searching for {search_text} on {page.url}")
     search_field_query = metadata.get("search_field_query")
     search_button_query = metadata.get("search_button_query")
+    product_selector = metadata.get("product_selector")
 
     if search_field_query and search_button_query:
         print("Filling input field")
-        search_box = await page.wait_for_selector(search_field_query)
-        await search_box.type(search_text)
+        search_box = await page.wait_for_selector(search_field_query, timeout=60000)
+        await search_box.fill(search_text)  # Use fill instead of type for better reliability
         print("Pressing search button")
-        button = await page.wait_for_selector(search_button_query)
-        await button.click()
+        button = await page.wait_for_selector(search_button_query, timeout=60000)
+        
+        # Wait for navigation after clicking
+        try:
+            async with page.expect_navigation(timeout=120000, wait_until="domcontentloaded"):
+                await button.click()
+        except Exception as e:
+            print(f"Navigation timeout or error: {e}")
+            # Fallback: wait for load state even if navigation didn't complete
+            await page.wait_for_load_state("domcontentloaded", timeout=60000)
+        
+        print("Waiting for search results to load")
+        # Wait for domcontentloaded (more reliable than networkidle for sites like Amazon)
+        await page.wait_for_load_state("domcontentloaded", timeout=60000)
+        
+        # Wait for product selector to ensure results are visible (this is the key indicator)
+        if product_selector:
+            print("Waiting for product results to appear")
+            try:
+                await page.wait_for_selector(product_selector, timeout=60000)
+                print("Product results found!")
+            except Exception as e:
+                print(f"Warning: Could not find product selector after 60s: {e}")
+                # Try to continue anyway in case selector changed
+        else:
+            # Give the page a moment to render if no selector provided
+            await page.wait_for_timeout(2000)
     else:
         raise Exception("Could not search.")
 
-    await page.wait_for_load_state()
     return page
 
 
-async def get_products(page, search_text, selector, get_product):
+async def get_products(page, search_text, selector, get_product): 
     print("Retreiving products.")
     product_divs = await page.query_selector_all(selector)
-    valid_products = []
+    print(f"Found {len(product_divs)} product divs")
     words = search_text.split(" ")
 
-    async with asyncio.TaskGroup() as tg:
-        for div in product_divs:
-            async def task(p_div):
-                product = await get_product(p_div)
+    async def process_product(p_div):
+        try:
+            product = await get_product(p_div)
+        except Exception as e:
+            return {"_reject_reason": f"exception:{e}"}
 
-                if not product["price"] or not product["url"]:
-                    return
+        if not product.get("name"):
+            product["_reject_reason"] = "missing_name"
+            return product
+        if not product.get("url"):
+            product["_reject_reason"] = "missing_url"
+            return product
+        if product.get("price") is None:
+            product["_reject_reason"] = "missing_price"
+            return product
 
-                for word in words:
-                    if not product["name"] or word.lower() not in product["name"].lower():
-                        break
-                else:
-                    valid_products.append(product)
-            tg.create_task(task(div))
+        # Check if all search words are in the product name
+        product_name_lower = product["name"].lower()
+        all_words_found = all(word.lower() in product_name_lower for word in words if word.strip())
+        
+        if all_words_found:
+            return product
+        product["_reject_reason"] = "word_mismatch"
+        return product
+
+    # Process all products concurrently
+    tasks = [process_product(div) for div in product_divs]
+    results = await asyncio.gather(*tasks, return_exceptions=False)
+    
+    # Build rejection breakdown + keep only accepted products
+    reject_counts = {}
+    valid_products = []
+    for product in results:
+        reason = product.get("_reject_reason")
+        if reason:
+            reject_counts[reason] = reject_counts.get(reason, 0) + 1
+            continue
+        valid_products.append(product)
+
+    print("Reject breakdown:", reject_counts)
+    if valid_products:
+        print("Sample accepted product:", {k: valid_products[0].get(k) for k in ("name", "price", "url")})
 
     return valid_products
 
@@ -113,7 +166,7 @@ async def main(url, search_text, response_route):
             raise Exception('Invalid URL')
 
         results = await get_products(search_page, search_text, metadata["product_selector"], func)
-        print("Saving results.")
+        print("Saving results. ", results)
         post_results(results, response_route, search_text, url)
 
         await browser.close()

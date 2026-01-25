@@ -14,6 +14,13 @@ function App() {
 
   useEffect(() => {
     fetchUniqueSearchTexts();
+    
+    // Refresh search texts list every 30 seconds to pick up new searches
+    const refreshInterval = setInterval(() => {
+      fetchUniqueSearchTexts();
+    }, 30000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const fetchUniqueSearchTexts = async () => {
@@ -51,18 +58,50 @@ function App() {
 
   const handleNewSearchTextSubmit = async (event) => {
     event.preventDefault();
+    const searchTextToSubmit = newSearchText;
 
     try {
       await axios.post(`${URL}/start-scraper`, {
-        search_text: newSearchText,
+        search_text: searchTextToSubmit,
         url: "https://amazon.ca",
       });
 
-      alert("Scraper started successfully");
-      setSearchTexts([...searchTexts, newSearchText]);
+      alert("Scraper started successfully! Results will appear in a few minutes.");
+      setSearchTexts([...searchTexts, searchTextToSubmit]);
       setNewSearchText("");
+      
+      // Poll for results - check every 5 seconds for up to 3 minutes (36 times)
+      let attempts = 0;
+      const maxAttempts = 36; // 3 minutes total
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const response = await axios.get(
+            `${URL}/results?search_text=${encodeURIComponent(searchTextToSubmit)}`
+          );
+          
+          if (response.data && response.data.length > 0) {
+            // Results are ready! Display them
+            setPriceHistory(response.data);
+            setShowPriceHistory(true);
+            clearInterval(pollInterval);
+            // Refresh the search texts list to ensure it's up to date
+            fetchUniqueSearchTexts();
+          } else if (attempts >= maxAttempts) {
+            // Stop polling after max attempts
+            clearInterval(pollInterval);
+            alert("Scraper is taking longer than expected. Please check back later or refresh the page.");
+          }
+        } catch (error) {
+          // Continue polling even if there's an error
+          if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+          }
+        }
+      }, 5000); // Check every 5 seconds
+      
     } catch (error) {
-      alert("Error starting scraper:", error);
+      alert("Error starting scraper: " + error.message);
     }
   };
 

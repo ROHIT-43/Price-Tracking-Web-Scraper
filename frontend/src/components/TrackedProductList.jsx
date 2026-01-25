@@ -27,7 +27,7 @@ const TrackedProductList = () => {
   const handleAddTrackedProduct = async () => {
     try {
       const response = await axios.post(
-        "https://price-tracking-web-scraper-oy3l.vercel.app/add-tracked-product",
+        `${apiUrl}/add-tracked-product`,
         {
           name: newTrackedProduct,
         }
@@ -45,7 +45,7 @@ const TrackedProductList = () => {
 
   const handleToggleTrackedProduct = async (productId) => {
     try {
-      await axios.put(`https://price-tracking-web-scraper-oy3l.vercel.app/tracked-product/${productId}`);
+      await axios.put(`${apiUrl}/tracked-product/${productId}`);
       setTrackedProducts((prevProducts) =>
         prevProducts.map((product) =>
           product.id === productId
